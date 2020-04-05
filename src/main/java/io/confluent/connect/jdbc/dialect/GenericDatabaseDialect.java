@@ -15,6 +15,9 @@
 
 package io.confluent.connect.jdbc.dialect;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.TimeZone;
 import org.apache.kafka.common.config.AbstractConfig;
@@ -61,6 +64,7 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.confluent.connect.jdbc.dialect.DatabaseDialectProvider.FixedScoreProvider;
@@ -1562,11 +1566,38 @@ public class GenericDatabaseDialect implements DatabaseDialect {
               DateTimeUtils.getTimeZoneCalendar(timeZone)
           );
           return true;
+        case "io.debezium.time.Date":
+          statement.setDate(
+                  index,
+                  java.sql.Date.valueOf(getLocalDate(Long.valueOf(value.toString())))
+          );
+          return true;
+
+        case "io.debezium.time.MicroTimestamp":
+          statement.setTimestamp(
+              index,
+              Timestamp.valueOf(getLocalDateTimeFromMicros((Long) value))
+          );
+          return true;
         default:
           return false;
       }
     }
     return false;
+  }
+
+  private LocalDate getLocalDate(Long daysSinceEpoch) {
+    return LocalDate.ofEpochDay(daysSinceEpoch);
+  }
+
+  private LocalDateTime getLocalDateTimeFromMicros(Long microsSinceEpoch) {
+    return LocalDateTime.ofInstant(
+            Instant.ofEpochSecond(
+                    TimeUnit.MICROSECONDS.toSeconds(microsSinceEpoch),
+                    TimeUnit.MICROSECONDS.toNanos(Math.floorMod(microsSinceEpoch,
+                            TimeUnit.SECONDS.toMicros(1)))),
+            ZoneOffset.UTC
+    );
   }
 
   @Override

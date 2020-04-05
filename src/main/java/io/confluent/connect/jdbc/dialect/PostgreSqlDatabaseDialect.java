@@ -189,11 +189,14 @@ public class PostgreSqlDatabaseDialect extends GenericDatabaseDialect {
         case Decimal.LOGICAL_NAME:
           return "DECIMAL";
         case Date.LOGICAL_NAME:
+        case "io.debezium.time.Date":
           return "DATE";
         case Time.LOGICAL_NAME:
           return "TIME";
         case Timestamp.LOGICAL_NAME:
+        case "io.debezium.time.MicroTimestamp":
           return "TIMESTAMP";
+
         default:
           // fall through to normal types
       }
@@ -270,7 +273,7 @@ public class PostgreSqlDatabaseDialect extends GenericDatabaseDialect {
       Object value
   ) {
     if (schemaName == null && Type.BOOLEAN.equals(type)) {
-      builder.append((Boolean) value ? "TRUE" : "FALSE");
+      builder.append(Boolean.valueOf(value.toString()) ? "TRUE" : "FALSE");
     } else {
       super.formatColumnValue(builder, schemaName, schemaParameters, type, value);
     }
